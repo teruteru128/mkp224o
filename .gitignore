@@ -3,6 +3,7 @@ mkp224o
 calcest
 test_*
 *.o
+*.exe
 
 # generated onions
 *.onion
