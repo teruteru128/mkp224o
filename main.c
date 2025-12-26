@@ -770,7 +770,7 @@ int main(int argc,char **argv)
 			double calcpersec = (1000000.0 * sumcalc) / (inowtime - istarttime);
 			double succpersec = (1000000.0 * sumsuccess) / (inowtime - istarttime);
 			double restpersec = (1000000.0 * sumrestart) / (inowtime - istarttime);
-			fprintf(stderr,">calc/sec:%8lf, succ/sec:%8lf, rest/sec:%8lf, elapsed:%5.6lfsec\n",
+			fprintf(stderr,">calc/sec:%8lf, succ/sec:%8lg, rest/sec:%8lg, elapsed:%5.6lfsec\n",
 				calcpersec,succpersec,restpersec,
 				(inowtime - istarttime + elapsedoffset) / 1000000.0);
 

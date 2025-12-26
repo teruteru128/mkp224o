@@ -4,6 +4,7 @@ calcest
 test_*
 *.o
 *.exe
+filters.txt
 
 # generated onions
 *.onion
