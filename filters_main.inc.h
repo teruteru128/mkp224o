@@ -448,8 +448,11 @@ static void filters_prepare(void)
 #endif
 }
 
-static void filters_addline(const char *line,size_t len)
+static void filters_addline(char *line,size_t len)
 {
+	// strip CR of CRLF line ending, if any
+	if (len && line[len - 1] == '\r')
+		line[--len] = 0;
 	if (!len || *line == '#' || strncmp(line,"//",2) == 0)
 		return;
 	filters_add(line);
