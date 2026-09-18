@@ -448,6 +448,13 @@ static void filters_prepare(void)
 #endif
 }
 
+static void filters_addline(const char *line,size_t len)
+{
+	if (!len || line[0] == '#' || (len >= 2 && memcmp(line,"//",2) == 0))
+		return;
+	filters_add(line);
+}
+
 static bool loadfilterfile(const char *fname)
 {
 	FILE *f = fopen(fname,"r");
@@ -455,40 +462,38 @@ static bool loadfilterfile(const char *fname)
 		fprintf(stderr,"failed to load filter file \"%s\": %s\n",fname,strerror(errno));
 		return false;
 	}
-	char *line = malloc(128);
-	size_t bufsize = 128;
-	size_t len = 0;
+	size_t bufsize = 128,len = 0;
+	char *line = (char *) malloc(bufsize);
 	if (!line) {
 		fprintf(stderr,"memory allocation failed for filter file \"%s\"\n",fname);
 		fclose(f);
 		return false;
 	}
-	while (fgets(line + len, bufsize - len, f)) {
+	while (fgets(line + len,bufsize - len,f)) {
 		len += strlen(line + len);
-		if (len > 0 && line[len - 1] == '\n') {
-			line[len - 1] = '\0';
-			if (line[0] && line[0] != '#' && (len < 2 || memcmp(line, "//", 2) != 0)) {
-				filters_add(line);
-			}
+		if (len && line[len - 1] == '\n') {
+			line[--len] = 0;
+			filters_addline(line,len);
 			len = 0;
-		} else if (!feof(f)) {
-			size_t newsize = bufsize * 2;
-			char *newbuf = realloc(line, newsize);
-			if (!newbuf) {
-				fprintf(stderr,"memory reallocation failed for filter file \"%s\"\n", fname);
+		}
+		else if (len + 1 == bufsize) {
+			// line didn't fit, grow buffer and keep reading it
+			char *newline = (char *) realloc(line,bufsize * 2);
+			if (!newline) {
+				fprintf(stderr,"memory reallocation failed for filter file \"%s\"\n",fname);
 				free(line);
 				fclose(f);
 				return false;
 			}
-			line = newbuf;
-			bufsize = newsize;
-			continue;
+			line = newline;
+			bufsize *= 2;
 		}
 	}
-	if (len > 0 && line[0] && line[0] != '#' && (len < 2 || memcmp(line, "//", 2) != 0)) {
-		filters_add(line);
-	}
+	// last line may lack terminating newline
+	if (len)
+		filters_addline(line,len);
 	free(line);
+
 	int fe = ferror(f);
 	fclose(f);
 	if (fe != 0) {
