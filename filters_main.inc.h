@@ -417,8 +417,18 @@ void filters_add(const char *filter)
 		return;
 	}
 
-	// attempt to JIT. ignore error
-	(void) pcre2_jit_compile(re,PCRE2_JIT_COMPLETE);
+	// attempt to JIT. failure is not fatal, but matching gets much slower
+	int jitres = pcre2_jit_compile(re,PCRE2_JIT_COMPLETE);
+	if (jitres != 0 && !quietflag) {
+		static bool jitwarned = false;
+		if (!jitwarned) {
+			PCRE2_UCHAR jitbuffer[256];
+			pcre2_get_error_message(jitres,jitbuffer,sizeof(jitbuffer));
+			fprintf(stderr,"warning: PCRE2 JIT compilation failed: %s\n"
+				"filtering will be significantly slower\n",jitbuffer);
+			jitwarned = true;
+		}
+	}
 
 	struct pcre2filter f;
 	memset(&f,0,sizeof(f));
