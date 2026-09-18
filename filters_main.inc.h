@@ -450,7 +450,7 @@ static void filters_prepare(void)
 
 static void filters_addline(const char *line,size_t len)
 {
-	if (!len || line[0] == '#' || (len >= 2 && memcmp(line,"//",2) == 0))
+	if (!len || *line == '#' || strncmp(line,"//",2) == 0)
 		return;
 	filters_add(line);
 }
@@ -470,23 +470,26 @@ static bool loadfilterfile(const char *fname)
 		return false;
 	}
 	while (fgets(line + len,bufsize - len,f)) {
-		len += strlen(line + len);
-		if (len && line[len - 1] == '\n') {
-			line[--len] = 0;
-			filters_addline(line,len);
+		char *nl = strchr(line + len,'\n');
+		if (nl) {
+			*nl = 0;
+			filters_addline(line,(size_t)(nl - line));
 			len = 0;
 		}
-		else if (len + 1 == bufsize) {
-			// line didn't fit, grow buffer and keep reading it
-			char *newline = (char *) realloc(line,bufsize * 2);
-			if (!newline) {
-				fprintf(stderr,"memory reallocation failed for filter file \"%s\"\n",fname);
-				free(line);
-				fclose(f);
-				return false;
+		else {
+			len += strlen(line + len);
+			if (len + 1 == bufsize) {
+				// line didn't fit, grow buffer and keep reading it
+				char *newline = (char *) realloc(line,bufsize * 2);
+				if (!newline) {
+					fprintf(stderr,"memory reallocation failed for filter file \"%s\"\n",fname);
+					free(line);
+					fclose(f);
+					return false;
+				}
+				line = newline;
+				bufsize *= 2;
 			}
-			line = newline;
-			bufsize *= 2;
 		}
 	}
 	// last line may lack terminating newline
